@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gantt Chart - 24 Months</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    .gantt-container {
+      overflow-x: auto;
+    }
+
+    .gantt-table {
+      border-collapse: collapse;
+      font-size: 10px;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .gantt-table th,
+    .gantt-table td {
+      border: 1px solid #3f3e3e;
+      padding: 2px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .gantt-table .bar {
+      color: white;
+    }
+
+    .gantt-table .month-header {
+      background-color: #e0e0e0;
+      font-weight: bold;
+    }
+
+    .gantt-table .task-name {
+      background-color: #f9f9f9;
+      font-weight: bold;
+      text-align: left;
+      white-space: normal;
+      min-width: 120px;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      border-right: 2px solid #ccc;
+    }
+
+    .task-type {
+      background-color: #f2f2f2;
+      font-weight: bold;
+      text-align: center;
+      min-width: 50px;
+      position: sticky;
+      left: 120px;
+      z-index: 1;
+      border-right: 1px solid #aaa;
+    }
+
+    .year-header {
+      background-color: #c0c0c0;
+      font-weight: bold;
+      border-top: 3px solid black;
+      border-bottom: 3px solid black;
+      white-space: nowrap;
+    }
+
+    .gantt-table td.bar:hover {
+      filter: brightness(0.9);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h3>Gantt Chart (24 Months)</h3>
+
+<div class="gantt-container">
+  <table class="gantt-table" id="ganttTable">
+    <thead>
+      <tr id="yearRow"></tr>
+      <tr id="monthRow">
+        <th rowspan="2" class="task-name">Task</th>
+        <th rowspan="2" class="task-type">Type</th>
+      </tr>
+      <tr id="weekRow"></tr>
+    </thead>
+    <tbody id="taskBody"></tbody>
+  </table>
+</div>
+
+<script>
+  const startDate = new Date("2024-01-01");
+  const totalMonths = 24;
+  const weeksPerMonth = 4;
+  const totalWeeks = totalMonths * weeksPerMonth;
+
+  const tasks = [
+    { name: "Planning", bars: [0, 1, 2, 3] },
+    { name: "Design", bars: [5, 6, 7, 8, 9] },
+    { name: "Implementation", bars: Array.from({ length: 30 }, (_, i) => i + 10) },
+    { name: "QA & Testing", bars: Array.from({ length: 20 }, (_, i) => i + 41) },
+    { name: "Deployment", bars: [75, 76, 77, 78] }
+  ];
+
+  // === Year Headers ===
+  const yearRow = document.getElementById("yearRow");
+  yearRow.appendChild(document.createElement("th")); // Task column
+  yearRow.appendChild(document.createElement("th")); // Type column
+
+  let currentYear = null;
+  let yearSpanCount = 0;
+
+  for (let m = 0; m < totalMonths; m++) {
+    const monthDate = new Date(startDate);
+    monthDate.setMonth(monthDate.getMonth() + m);
+    const year = monthDate.getFullYear();
+
+    if (currentYear === null) {
+      currentYear = year;
+      yearSpanCount = 1;
+    } else if (year === currentYear) {
+      yearSpanCount++;
+    } else {
+      const th = document.createElement("th");
+      th.colSpan = yearSpanCount * weeksPerMonth;
+      th.className = "year-header";
+      th.textContent = currentYear;
+      yearRow.appendChild(th);
+      currentYear = year;
+      yearSpanCount = 1;
+    }
+  }
+
+  const lastTh = document.createElement("th");
+  lastTh.colSpan = yearSpanCount * weeksPerMonth;
+  lastTh.className = "year-header";
+  lastTh.textContent = currentYear;
+  yearRow.appendChild(lastTh);
+
+  // === Month Headers ===
+  const monthRow = document.getElementById("monthRow");
+  for (let m = 0; m < totalMonths; m++) {
+    const monthDate = new Date(startDate);
+    monthDate.setMonth(monthDate.getMonth() + m);
+    const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    const th = document.createElement("th");
+    th.colSpan = weeksPerMonth;
+    th.className = "month-header";
+    th.textContent = label;
+    monthRow.appendChild(th);
+  }
+
+  // === Week Headers ===
+  const weekRow = document.getElementById("weekRow");
+  for (let w = 1; w <= totalWeeks; w++) {
+    const th = document.createElement("th");
+    th.textContent = `W${w}`;
+    weekRow.appendChild(th);
+  }
+
+  // === Task Rows (Plan and Act with blue lines between every cell) ===
+  const taskBody = document.getElementById("taskBody");
+
+  tasks.forEach(task => {
+    const trPlan = document.createElement("tr");
+    const trAct = document.createElement("tr");
+
+    const tdName = document.createElement("td");
+    tdName.className = "task-name";
+    tdName.textContent = task.name;
+    tdName.rowSpan = 2;
+    trPlan.appendChild(tdName);
+
+    const tdPlan = document.createElement("td");
+    tdPlan.className = "task-type";
+    tdPlan.textContent = "Plan";
+    trPlan.appendChild(tdPlan);
+
+    const tdAct = document.createElement("td");
+    tdAct.className = "task-type";
+    tdAct.textContent = "Act";
+    trAct.appendChild(tdAct);
+
+    for (let i = 0; i < totalWeeks; i++) {
+      const tdPlanCell = document.createElement("td");
+      const tdActCell = document.createElement("td");
+
+      // Bars as before
+      if (task.bars.includes(i)) {
+        tdPlanCell.className = "bar";
+        tdPlanCell.style.backgroundColor = "#4caf50";
+        tdPlanCell.textContent = "█";
+      }
+
+      if (task.bars.includes(i + 1)) { // Simulated delay
+        tdActCell.className = "bar";
+        tdActCell.style.backgroundColor = "#909090";
+        tdActCell.textContent = "█";
+      }
+
+      // Always draw blue vertical line between Plan and Act rows for every week
+      tdPlanCell.style.borderBottom = "2px solid #909090";
+      tdActCell.style.borderTop = "2px solid #909090";
+
+      trPlan.appendChild(tdPlanCell);
+      trAct.appendChild(tdActCell);
+    }
+
+    taskBody.appendChild(trPlan);
+    taskBody.appendChild(trAct);
+  });
+</script>
+
+</body>
+</html>
